@@ -2,235 +2,263 @@
 <html lang="sl">
 <head>
 <meta charset="UTF-8">
-<title>Clash Royale Spy – Soft Lavender</title>
-
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CR Spy Game</title>
 <style>
-    /* ====== GLOBAL ====== */
-    body {
-        margin: 0;
-        padding: 0;
-        font-family: "Inter", sans-serif;
-        background: #2a2438; /* soft dark lavender */
-        color: #e8e1f0;
-        text-align: center;
-    }
+body {
+    margin:0;
+    font-family: Arial, sans-serif;
+    background: #2a2438;
+    color: white;
+    display:flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px;
+}
+h1 { color: #c084fc; margin-top: 10px; }
+button {
+    background: #c084fc;
+    border:none;
+    padding:12px 22px;
+    border-radius:10px;
+    color:white;
+    font-size:17px;
+    margin:10px 0;
+    cursor:pointer;
+    transition:0.2s;
+}
+button:hover { transform: scale(1.05); }
+#settingsBtn { position: fixed; top:15px; right:15px; background:transparent; font-size:28px; cursor:pointer; color:#c084fc; }
 
-    h1 {
-        font-weight: 700;
-        margin-top: 25px;
-        color: #dec9ff;
-    }
+/* POPUPS */
+.popup-bg {
+    position: fixed; top:0; left:0; width:100%; height:100%;
+    background: rgba(0,0,0,0.55);
+    display: none; justify-content:center; align-items:center;
+}
+.popup {
+    background:#3e335a;
+    padding:25px;
+    border-radius:15px;
+    width:90%;
+    max-width:380px;
+    text-align:center;
+    transform-style: preserve-3d;
+    perspective: 1000px;
+}
+/* INPUTS */
+.inputRow { margin:6px 0; }
+.inputRow input { width:90%; padding:8px; border-radius:8px; border:none; background:#2a2438; color:white; }
 
-    input, button {
-        padding: 12px;
-        margin: 6px;
-        width: 220px;
-        background: #3e335a; 
-        border: 1px solid #5c4d85;
-        color: #f4eaff;
-        border-radius: 10px;
-        font-size: 15px;
-        transition: 0.15s;
-    }
+/* ANIMATIONS */
+@keyframes shuffle {0%{transform:translateX(0) rotate(0deg); opacity:1;}20%{transform:translateX(-10px) rotate(-3deg); opacity:0.6;}40%{transform:translateX(10px) rotate(3deg); opacity:0.6;}60%{transform:translateX(-6px) rotate(-2deg); opacity:0.7;}80%{transform:translateX(6px) rotate(2deg); opacity:0.7;}100%{transform:translateX(0) rotate(0deg); opacity:1;}}
+.shuffleAnim { animation: shuffle 0.35s ease-in-out; }
 
-    button:hover {
-        background: #54457e;
-        cursor: pointer;
-    }
+@keyframes cardFlip {0%{transform:rotateY(0deg);}50%{transform:rotateY(90deg);}100%{transform:rotateY(0deg);}}
+.flipAnim { animation: cardFlip 0.55s ease-in-out; }
 
-    /* Settings gear */
-    #settingsBtn {
-        position: fixed;
-        top: 12px;
-        right: 12px;
-        font-size: 26px;
-        cursor: pointer;
-        padding: 10px 12px;
-        border-radius: 14px;
-        background: #3e335a;
-        border: 1px solid #5c4d85;
-        transition: 0.2s;
-    }
-    #settingsBtn:hover {
-        background: #54457e;
-    }
+@keyframes shake {0%{transform:translateX(0);}25%{transform:translateX(-5px);}50%{transform:translateX(5px);}75%{transform:translateX(-5px);}100%{transform:translateX(0);}}
+.shakeAnim { animation: shake 0.5s ease-in-out; }
 
-    /* ====== POPUP (FLIP ANIMATION) ====== */
-    #popupWrapper {
-        position: fixed;
-        inset: 0;
-        display: none;
-        justify-content: center;
-        align-items: center;
-        background: rgba(10, 0, 20, 0.55);
-        z-index: 50;
-    }
+.playerCard {
+    background:#3e335a;
+    margin:10px 0;
+    padding:15px;
+    border-radius:12px;
+    width:90%; max-width:350px;
+    text-align:center;
+    font-size:18px;
+    cursor:pointer;
+    transition:0.2s;
+}
+.playerCard.revealed { opacity:0.5; cursor:default; }
+#replayBtn { background:#c084fc; width:90%; max-width:350px; padding:15px; border-radius:12px; font-size:20px; margin-top:15px; }
+#fullRevealBtn { display:none; background:#f75c5c; width:90%; max-width:350px; padding:15px; border-radius:12px; font-size:20px; margin-top:15px; }
 
-    #popup {
-        width: 290px;
-        padding: 25px;
-        background: #3e335a;
-        border: 2px solid #5c4d85;
-        border-radius: 14px;
-        font-size: 18px;
-        color: #f1e7ff;
-        backface-visibility: hidden;
-
-        /* Card flip origin + animation */
-        transform-style: preserve-3d;
-        animation: flipIn 0.55s ease forwards;
-    }
-
-    @keyframes flipIn {
-        0% { transform: rotateY(90deg) scale(0.8); opacity: 0; }
-        60% { transform: rotateY(-15deg) scale(1.03); opacity: 1; }
-        100% { transform: rotateY(0deg) scale(1); }
-    }
-
-    #popup button {
-        width: 100%;
-        margin-top: 18px;
-    }
-
-    /* Disabled buttons after reveal */
-    .disabled {
-        opacity: 0.45;
-        pointer-events: none;
-    }
-
+#majorityPopup {
+    display:none;
+    position: fixed;
+    top: 10%;
+    left: 50%;
+    transform: translateX(-50%);
+    background:#3e335a;
+    padding:20px;
+    border-radius:15px;
+    font-size:20px;
+    color:#c084fc;
+    opacity:0;
+    transition: opacity 0.5s ease-in-out;
+}
 </style>
 </head>
-
 <body>
 
-<div id="settingsBtn" onclick="showSettings()">⚙</div>
+<h1>Clash Royale Spy</h1>
 
-<div id="setup">
-    <h1>Clash Royale Spy</h1>
+<div id="settingsBtn">⚙️</div>
 
-    <p>Število igralcev:</p>
-    <input type="number" id="numPlayers" min="3" max="20" value="4">
-    <br>
-    <button onclick="confirmPlayers()">Potrdi</button>
+<button id="startSetupBtn">Nastavi igralce</button>
 
-    <div id="playersArea"></div>
-</div>
+<div id="playerContainer"></div>
 
-<!-- Start / restart -->
-<button id="startBtn" style="display:none; margin-top:20px;">Začni igro</button>
+<button id="replayBtn" style="display:none;">🔄 Ponovna igra</button>
+<button id="fullRevealBtn">Razkrij vse</button>
 
-<!-- Game info -->
-<div id="gameInfo" style="margin-top: 25px; font-size: 20px;"></div>
+<div id="majorityPopup"></div>
 
-<!-- ===== POPUP ===== -->
-<div id="popupWrapper">
-    <div id="popup">
-        <div id="popupText"></div>
-        <button onclick="closePopup()">Zapri</button>
+<!-- SETTINGS POPUP -->
+<div class="popup-bg" id="settingsPopup">
+    <div class="popup">
+        <h2>Nastavitve</h2>
+        <button onclick="resetGame()">Ponastavi igralce</button>
+        <button onclick="closeSettings()">Zapri</button>
     </div>
 </div>
 
+<!-- SETUP POPUP -->
+<div class="popup-bg" id="setupPopup">
+    <div class="popup">
+        <h2>Nastavi število igralcev</h2>
+        <input type="number" id="playerCount" min="3" max="20" value="4">
+        <div id="nameInputs"></div>
+        <button onclick="confirmPlayers()">Potrdi</button>
+    </div>
+</div>
+
+<!-- SECRET POPUP -->
+<div class="popup-bg" id="secretPopup">
+    <div class="popup" id="flipCardPopup">
+        <div id="secretText" style="font-size:20px; margin-bottom:15px;"></div>
+        <button onclick="closeSecret()">Zapri</button>
+    </div>
+</div>
 
 <script>
-/* ALL CLASH ROYALE CARDS */
-const cards = [
-"Knight","Archers","Goblins","Giant","P.E.K.K.A","Minions","Balloon","Witch","Barbarians","Golem",
-"Skeletons","Valkyrie","Skeleton Army","Bomber","Musketeer","Baby Dragon","Prince","Wizard","Mini P.E.K.K.A",
-"Spear Goblins","Giant Skeleton","Hog Rider","Minion Horde","Ice Wizard","Royal Giant","Guards","Princess",
-"Dark Prince","Three Musketeers","Lava Hound","Ice Spirit","Fire Spirit","Miner","Sparky","Bowler",
-"Lumberjack","Battle Ram","Inferno Dragon","Ice Golem","Mega Minion","Dart Goblin","Goblin Gang",
-"Electro Wizard","Elite Barbarians","Hunter","Executioner","Bandit","Royal Recruits","Night Witch","Bats",
-"Royal Ghost","Ram Rider","Zappies","Rascals","Cannon Cart","Flying Machine","Wall Breakers","Royal Hogs",
-"Goblin Giant","Fisherman","Magic Archer","Electro Dragon","Firecracker","Mighty Miner","Elixir Golem",
-"Goblin Barrel","Freeze","Mirror","Lightning","Zap","Poison","Graveyard","The Log","Tornado","Clone",
-"Earthquake","Barbarian Barrel","Heal Spirit","Giant Snowball","Royal Delivery"
-];
+let players=[], spyIndex=-1, currentCard="", revealedCount=0;
+let clashCards=["Knight","Archers","Giant","Wizard","P.E.K.K.A","Hog Rider","Valkyrie","Minions","Golem","Witch","Prince","Musketeer","Mini P.E.K.K.A","Sparky","Electro Wizard","Mega Knight","Royal Giant","Baby Dragon","Ice Wizard"];
 
-let players = [];
-let spyIndex = -1;
-let chosenCard = "";
+document.getElementById("startSetupBtn").onclick=()=>{document.getElementById("setupPopup").style.display="flex"; generateNameInputs();};
+document.getElementById("settingsBtn").onclick=()=>{ let popup=document.getElementById("settingsPopup"); popup.style.display=(popup.style.display==="flex")?"none":"flex";};
+document.getElementById("playerCount").oninput=generateNameInputs;
 
-/* === Show inputs for names === */
-function confirmPlayers() {
-    const n = parseInt(document.getElementById("numPlayers").value);
-
-    if (n < 3) return popupMsg("Rabiš vsaj 3 igralce.");
-
-    const area = document.getElementById("playersArea");
-    area.innerHTML = "";
-
-    for (let i = 0; i < n; i++) {
-        area.innerHTML += `<input id="p${i}" placeholder="Ime ${i+1} (opcijsko)"><br>`;
-    }
-
-    document.getElementById("startBtn").style.display = "inline-block";
-    document.getElementById("startBtn").onclick = startGame;
+function generateNameInputs(){
+    let count=document.getElementById("playerCount").value;
+    let container=document.getElementById("nameInputs");
+    container.innerHTML="";
+    for(let i=0;i<count;i++){ container.innerHTML+=`<div class="inputRow"><input placeholder="Igralec ${i+1}" id="p${i}"></div>`;}
 }
 
-/* === POPUP === */
-function popupMsg(msg) {
-    document.getElementById("popupText").innerText = msg;
-
-    // Replay animation cleanly
-    const card = document.getElementById("popup");
-    card.style.animation = "none";
-    void card.offsetWidth;
-    card.style.animation = "flipIn 0.55s ease forwards";
-
-    document.getElementById("popupWrapper").style.display = "flex";
+function confirmPlayers(){
+    let count=document.getElementById("playerCount").value;
+    players=[];
+    for(let i=0;i<count;i++){ let name=document.getElementById(`p${i}`).value||`Igralec ${i+1}`; players.push(name);}
+    document.getElementById("setupPopup").style.display="none";
+    startGame();
 }
 
-function closePopup() {
-    document.getElementById("popupWrapper").style.display = "none";
+function startGame(){
+    revealedCount=0;
+    assignRoles();
+    displayCards();
+    document.getElementById("replayBtn").style.display="block";
+    document.getElementById("fullRevealBtn").style.display="none";
+    document.getElementById("majorityPopup").style.opacity=0;
+    document.getElementById("majorityPopup").style.display="none";
 }
 
-/* === START / PLAY === */
-function startGame() {
-    players = [];
-    const n = parseInt(document.getElementById("numPlayers").value);
-
-    for (let i = 0; i < n; i++) {
-        let name = document.getElementById("p"+i).value.trim();
-        if (!name) name = "Igralec " + (i+1);
-        players.push(name);
-    }
-
-    document.getElementById("setup").style.display = "none";
-
-    spyIndex = Math.floor(Math.random() * players.length);
-    chosenCard = cards[Math.floor(Math.random() * cards.length)];
-
-    const starter = players[Math.floor(Math.random() * players.length)];
-
-    let html = `<b>Začne: ${starter}</b><br><br>`;
-
-    for (let i = 0; i < players.length; i++) {
-        html += `<button id="btn${i}" onclick="reveal(${i})">${players[i]}</button><br>`;
-    }
-
-    document.getElementById("gameInfo").innerHTML = html;
-
-    const btn = document.getElementById("startBtn");
-    btn.textContent = "Ponovna igra";
-    btn.onclick = () => location.reload();
+function assignRoles(){
+    currentCard=clashCards[Math.floor(Math.random()*clashCards.length)];
+    spyIndex=Math.floor(Math.random()*players.length);
 }
 
-/* === REVEAL === */
-function reveal(i) {
-    if (i === spyIndex) popupMsg(players[i] + " – ti si SPY!");
-    else popupMsg(players[i] + " – tvoja karta je: " + chosenCard);
-
-    const btn = document.getElementById("btn"+i);
-    btn.classList.add("disabled");
-    btn.disabled = true;
+function displayCards(){
+    let container=document.getElementById("playerContainer");
+    container.innerHTML="";
+    players.forEach((name,i)=>{
+        let card=document.createElement("div");
+        card.className="playerCard";
+        card.id=`card${i}`;
+        card.innerHTML=`<strong>${name}</strong>`;
+        card.onclick=()=>revealSecret(i);
+        container.appendChild(card);
+    });
 }
 
-/* === SETTINGS BUTTON === */
-function showSettings() {
-    document.getElementById("setup").style.display = "block";
+function revealSecret(i){
+    let cardDiv=document.getElementById(`card${i}`);
+    if(cardDiv.classList.contains("revealed")) return;
+    let popup=document.getElementById("secretPopup");
+    let text=document.getElementById("secretText");
+    // Flip popup animation
+    text.innerText="";
+    popup.style.display="flex";
+    setTimeout(()=>{
+        if(i===spyIndex) text.innerText="TI SI SPY!";
+        else text.innerText=`Tvoja karta: ${currentCard}`;
+    },50);
+    cardDiv.classList.add("revealed");
+    revealedCount++;
+    if(revealedCount===players.length) document.getElementById("fullRevealBtn").style.display="block";
 }
+
+function closeSecret(){ document.getElementById("secretPopup").style.display="none"; }
+
+document.getElementById("replayBtn").onclick=()=>{
+    revealedCount=0;
+    document.getElementById("fullRevealBtn").style.display="none";
+    let maj=document.getElementById("majorityPopup");
+    maj.style.opacity=0; maj.style.display="none";
+    shuffleAnimation(()=>{ assignRoles(); displayCards(); flipAnimation(); });
+};
+
+document.getElementById("fullRevealBtn").onclick=()=>{
+    let majorityText=document.getElementById("majorityPopup");
+    majorityText.innerText=`Karta je bila: ${currentCard}`;
+    majorityText.style.display="block";
+    setTimeout(()=>{ majorityText.style.opacity=1; },50);
+    setTimeout(()=>{ majorityText.style.opacity=0; },3000); // fade out 3s
+
+    players.forEach((_,i)=>{
+        let card=document.getElementById(`card${i}`);
+        card.classList.add("flipAnim");
+        card.classList.add("shakeAnim");
+        if(i===spyIndex) card.style.background="#f75c5c";
+        setTimeout(()=>{ card.classList.remove("flipAnim"); card.classList.remove("shakeAnim"); },600);
+    });
+};
+
+function shuffleAnimation(callback){
+    players.forEach((_,i)=>{
+        let card=document.getElementById(`card${i}`);
+        card.classList.add("shuffleAnim");
+        setTimeout(()=>{
+            card.classList.remove("shuffleAnim");
+            if(i===players.length-1) callback();
+        },350);
+    });
+}
+
+function flipAnimation(){
+    players.forEach((_,i)=>{
+        let card=document.getElementById(`card${i}`);
+        setTimeout(()=>{ card.classList.add("flipAnim"); setTimeout(()=>card.classList.remove("flipAnim"),550);}, i*80);
+    });
+}
+
+function resetGame(){
+    players=[];
+    document.getElementById("playerContainer").innerHTML="";
+    document.getElementById("replayBtn").style.display="none";
+    document.getElementById("fullRevealBtn").style.display="none";
+    document.getElementById("majorityPopup").style.opacity=0;
+    document.getElementById("majorityPopup").style.display="none";
+    document.getElementById("settingsPopup").style.display="none";
+    document.getElementById("setupPopup").style.display="flex";
+    generateNameInputs();
+}
+
+function closeSettings(){ document.getElementById("settingsPopup").style.display="none"; }
 
 </script>
-
 </body>
 </html>
