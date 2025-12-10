@@ -60,6 +60,9 @@ button:hover { transform: scale(1.05); }
 @keyframes shake {0%{transform:translateX(0);}25%{transform:translateX(-5px);}50%{transform:translateX(5px);}75%{transform:translateX(-5px);}100%{transform:translateX(0);}}
 .shakeAnim { animation: shake 0.5s ease-in-out; }
 
+@keyframes pulse {0%{box-shadow:0 0 0px #f75c5c;}50%{box-shadow:0 0 15px #f75c5c;}100%{box-shadow:0 0 0px #f75c5c;}}
+.pulseAnim { animation: pulse 0.6s ease-in-out 3; }
+
 .playerCard {
     background:#3e335a;
     margin:10px 0;
@@ -72,6 +75,8 @@ button:hover { transform: scale(1.05); }
     transition:0.2s;
 }
 .playerCard.revealed { opacity:0.5; cursor:default; }
+.playerCard.starter { background:#6f5c8b; }
+
 #replayBtn { background:#c084fc; width:90%; max-width:350px; padding:15px; border-radius:12px; font-size:20px; margin-top:15px; }
 #fullRevealBtn { display:none; background:#f75c5c; width:90%; max-width:350px; padding:15px; border-radius:12px; font-size:20px; margin-top:15px; }
 
@@ -89,6 +94,7 @@ button:hover { transform: scale(1.05); }
     opacity:0;
     transition: opacity 0.5s ease-in-out;
 }
+
 </style>
 </head>
 <body>
@@ -135,7 +141,8 @@ button:hover { transform: scale(1.05); }
 
 <script>
 let players=[], spyIndex=-1, currentCard="", revealedCount=0;
-let clashCards=["Knight","Archers","Giant","Wizard","P.E.K.K.A","Hog Rider","Valkyrie","Minions","Golem","Witch","Prince","Musketeer","Mini P.E.K.K.A","Sparky","Electro Wizard","Mega Knight","Royal Giant","Baby Dragon","Ice Wizard"];
+let clashCards=["Knight","Archers","Giant","Wizard","P.E.K.K.A","Hog Rider","Valkyrie","Minions","Golem","Witch","Prince","Musketeer","Mini P.E.K.P.A","Sparky","Electro Wizard","Mega Knight","Royal Giant","Baby Dragon","Ice Wizard"];
+let starterIndex=-1;
 
 document.getElementById("startSetupBtn").onclick=()=>{document.getElementById("setupPopup").style.display="flex"; generateNameInputs();};
 document.getElementById("settingsBtn").onclick=()=>{ let popup=document.getElementById("settingsPopup"); popup.style.display=(popup.style.display==="flex")?"none":"flex";};
@@ -164,11 +171,13 @@ function startGame(){
     document.getElementById("fullRevealBtn").style.display="none";
     document.getElementById("majorityPopup").style.opacity=0;
     document.getElementById("majorityPopup").style.display="none";
+    markStarter();
 }
 
 function assignRoles(){
     currentCard=clashCards[Math.floor(Math.random()*clashCards.length)];
     spyIndex=Math.floor(Math.random()*players.length);
+    starterIndex=Math.floor(Math.random()*players.length);
 }
 
 function displayCards(){
@@ -184,12 +193,21 @@ function displayCards(){
     });
 }
 
+function markStarter(){
+    let starterCard=document.getElementById(`card${starterIndex}`);
+    if(starterCard) starterCard.classList.add("starter");
+}
+
+function unmarkStarter(){
+    let starterCard=document.getElementById(`card${starterIndex}`);
+    if(starterCard) starterCard.classList.remove("starter");
+}
+
 function revealSecret(i){
     let cardDiv=document.getElementById(`card${i}`);
     if(cardDiv.classList.contains("revealed")) return;
     let popup=document.getElementById("secretPopup");
     let text=document.getElementById("secretText");
-    // Flip popup animation
     text.innerText="";
     popup.style.display="flex";
     setTimeout(()=>{
@@ -198,7 +216,10 @@ function revealSecret(i){
     },50);
     cardDiv.classList.add("revealed");
     revealedCount++;
-    if(revealedCount===players.length) document.getElementById("fullRevealBtn").style.display="block";
+    if(revealedCount===players.length){
+        document.getElementById("fullRevealBtn").style.display="block";
+        unmarkStarter();
+    }
 }
 
 function closeSecret(){ document.getElementById("secretPopup").style.display="none"; }
@@ -208,23 +229,24 @@ document.getElementById("replayBtn").onclick=()=>{
     document.getElementById("fullRevealBtn").style.display="none";
     let maj=document.getElementById("majorityPopup");
     maj.style.opacity=0; maj.style.display="none";
-    shuffleAnimation(()=>{ assignRoles(); displayCards(); flipAnimation(); });
+    shuffleAnimation(()=>{ assignRoles(); displayCards(); flipAnimation(); markStarter(); });
 };
 
 document.getElementById("fullRevealBtn").onclick=()=>{
     let majorityText=document.getElementById("majorityPopup");
-    majorityText.innerText=`Karta je bila: ${currentCard}`;
-    majorityText.style.display="block";
-    setTimeout(()=>{ majorityText.style.opacity=1; },50);
-    setTimeout(()=>{ majorityText.style.opacity=0; },3000); // fade out 3s
-
     players.forEach((_,i)=>{
         let card=document.getElementById(`card${i}`);
         card.classList.add("flipAnim");
         card.classList.add("shakeAnim");
-        if(i===spyIndex) card.style.background="#f75c5c";
-        setTimeout(()=>{ card.classList.remove("flipAnim"); card.classList.remove("shakeAnim"); },600);
+        if(i===spyIndex) card.classList.add("pulseAnim"), card.style.background="#f75c5c";
+        setTimeout(()=>{ card.classList.remove("flipAnim"); card.classList.remove("shakeAnim"); card.classList.remove("pulseAnim"); },600);
     });
+    setTimeout(()=>{
+        majorityText.innerText=`Karta je bila: ${currentCard}`;
+        majorityText.style.display="block";
+        setTimeout(()=>{ majorityText.style.opacity=1; },50);
+        setTimeout(()=>{ majorityText.style.opacity=0; },3000);
+    },650); // napisal po animaciji
 };
 
 function shuffleAnimation(callback){
