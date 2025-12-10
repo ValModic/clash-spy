@@ -2,91 +2,113 @@
 <html lang="sl">
 <head>
 <meta charset="UTF-8">
-<title>Clash Royale Spy – Dark</title>
+<title>Clash Royale Spy – Soft Lavender</title>
+
 <style>
+    /* ====== GLOBAL ====== */
     body {
-        background: #121212;
-        color: #eaeaea;
-        font-family: Arial, sans-serif;
         margin: 0;
         padding: 0;
+        font-family: "Inter", sans-serif;
+        background: #2a2438; /* soft dark lavender */
+        color: #e8e1f0;
         text-align: center;
     }
 
-    .container {
-        margin-top: 40px;
+    h1 {
+        font-weight: 700;
+        margin-top: 25px;
+        color: #dec9ff;
     }
 
     input, button {
-        padding: 10px;
-        margin: 5px;
-        background: #1e1e1e;
-        border: 1px solid #444;
-        color: white;
-        border-radius: 5px;
+        padding: 12px;
+        margin: 6px;
+        width: 220px;
+        background: #3e335a; 
+        border: 1px solid #5c4d85;
+        color: #f4eaff;
+        border-radius: 10px;
+        font-size: 15px;
+        transition: 0.15s;
     }
 
     button:hover {
-        background: #333;
+        background: #54457e;
         cursor: pointer;
     }
 
-    #playersArea {
-        margin-top: 20px;
-    }
-
-    /* Gear icon */
+    /* Settings gear */
     #settingsBtn {
         position: fixed;
-        top: 10px;
-        right: 10px;
+        top: 12px;
+        right: 12px;
         font-size: 26px;
         cursor: pointer;
-        padding: 8px;
-        border-radius: 10px;
-        background: #1e1e1e;
-        border: 1px solid #444;
+        padding: 10px 12px;
+        border-radius: 14px;
+        background: #3e335a;
+        border: 1px solid #5c4d85;
+        transition: 0.2s;
     }
-
     #settingsBtn:hover {
-        background: #333;
+        background: #54457e;
     }
 
-    /* Popup */
-    #popup {
+    /* ====== POPUP (FLIP ANIMATION) ====== */
+    #popupWrapper {
         position: fixed;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        background: #1e1e1e;
-        padding: 30px;
-        border: 2px solid #444;
-        border-radius: 10px;
+        inset: 0;
         display: none;
-        z-index: 100;
-        width: 300px;
+        justify-content: center;
+        align-items: center;
+        background: rgba(10, 0, 20, 0.55);
+        z-index: 50;
+    }
+
+    #popup {
+        width: 290px;
+        padding: 25px;
+        background: #3e335a;
+        border: 2px solid #5c4d85;
+        border-radius: 14px;
+        font-size: 18px;
+        color: #f1e7ff;
+        backface-visibility: hidden;
+
+        /* Card flip origin + animation */
+        transform-style: preserve-3d;
+        animation: flipIn 0.55s ease forwards;
+    }
+
+    @keyframes flipIn {
+        0% { transform: rotateY(90deg) scale(0.8); opacity: 0; }
+        60% { transform: rotateY(-15deg) scale(1.03); opacity: 1; }
+        100% { transform: rotateY(0deg) scale(1); }
     }
 
     #popup button {
-        margin-top: 15px;
         width: 100%;
+        margin-top: 18px;
     }
 
+    /* Disabled buttons after reveal */
     .disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
+        opacity: 0.45;
+        pointer-events: none;
     }
+
 </style>
 </head>
+
 <body>
 
 <div id="settingsBtn" onclick="showSettings()">⚙</div>
 
-<div class="container" id="setup">
-
+<div id="setup">
     <h1>Clash Royale Spy</h1>
 
-    <label>Število igralcev:</label>
+    <p>Število igralcev:</p>
     <input type="number" id="numPlayers" min="3" max="20" value="4">
     <br>
     <button onclick="confirmPlayers()">Potrdi</button>
@@ -94,17 +116,23 @@
     <div id="playersArea"></div>
 </div>
 
-<button id="startBtn" style="display:none;" onclick="startGame()">Začni igro</button>
+<!-- Start / restart -->
+<button id="startBtn" style="display:none; margin-top:20px;">Začni igro</button>
 
-<div id="gameInfo" style="margin-top: 20px; font-size:20px;"></div>
+<!-- Game info -->
+<div id="gameInfo" style="margin-top: 25px; font-size: 20px;"></div>
 
-<!-- Popup -->
-<div id="popup">
-    <div id="popupText"></div>
-    <button onclick="closePopup()">Zapri</button>
+<!-- ===== POPUP ===== -->
+<div id="popupWrapper">
+    <div id="popup">
+        <div id="popupText"></div>
+        <button onclick="closePopup()">Zapri</button>
+    </div>
 </div>
 
+
 <script>
+/* ALL CLASH ROYALE CARDS */
 const cards = [
 "Knight","Archers","Goblins","Giant","P.E.K.K.A","Minions","Balloon","Witch","Barbarians","Golem",
 "Skeletons","Valkyrie","Skeleton Army","Bomber","Musketeer","Baby Dragon","Prince","Wizard","Mini P.E.K.K.A",
@@ -122,88 +150,86 @@ let players = [];
 let spyIndex = -1;
 let chosenCard = "";
 
-// Show name inputs
+/* === Show inputs for names === */
 function confirmPlayers() {
-    let n = parseInt(document.getElementById("numPlayers").value);
-    if (n < 3) { popupMsg("Rabiš vsaj 3 igralce."); return; }
+    const n = parseInt(document.getElementById("numPlayers").value);
 
-    let area = document.getElementById("playersArea");
+    if (n < 3) return popupMsg("Rabiš vsaj 3 igralce.");
+
+    const area = document.getElementById("playersArea");
     area.innerHTML = "";
 
     for (let i = 0; i < n; i++) {
-        area.innerHTML += `<input id="p${i}" placeholder="Ime igralca ${i+1} (opcijsko)"> <br>`;
+        area.innerHTML += `<input id="p${i}" placeholder="Ime ${i+1} (opcijsko)"><br>`;
     }
 
     document.getElementById("startBtn").style.display = "inline-block";
+    document.getElementById("startBtn").onclick = startGame;
 }
 
-// Open popup
+/* === POPUP === */
 function popupMsg(msg) {
     document.getElementById("popupText").innerText = msg;
-    document.getElementById("popup").style.display = "block";
+
+    // Replay animation cleanly
+    const card = document.getElementById("popup");
+    card.style.animation = "none";
+    void card.offsetWidth;
+    card.style.animation = "flipIn 0.55s ease forwards";
+
+    document.getElementById("popupWrapper").style.display = "flex";
 }
 
 function closePopup() {
-    document.getElementById("popup").style.display = "none";
+    document.getElementById("popupWrapper").style.display = "none";
 }
 
-// Start game
+/* === START / PLAY === */
 function startGame() {
-    // Collect player names
     players = [];
     const n = parseInt(document.getElementById("numPlayers").value);
 
     for (let i = 0; i < n; i++) {
         let name = document.getElementById("p"+i).value.trim();
-        if (name === "") name = "Igralec " + (i+1);
+        if (!name) name = "Igralec " + (i+1);
         players.push(name);
     }
 
-    // Hide setup
     document.getElementById("setup").style.display = "none";
 
-    // Random spy + card
     spyIndex = Math.floor(Math.random() * players.length);
     chosenCard = cards[Math.floor(Math.random() * cards.length)];
 
-    // Random player starts
-    let starter = players[Math.floor(Math.random() * players.length)];
-    document.getElementById("gameInfo").innerHTML = 
-        "<b>Začne: " + starter + "</b>";
+    const starter = players[Math.floor(Math.random() * players.length)];
 
-    // Change start button → restart
-    let btn = document.getElementById("startBtn");
-    btn.textContent = "Ponovna igra";
-    btn.onclick = resetGame;
+    let html = `<b>Začne: ${starter}</b><br><br>`;
 
-    // Show buttons to reveal card
-    let out = "";
     for (let i = 0; i < players.length; i++) {
-        out += `<button id="btn${i}" onclick="reveal(${i})">${players[i]}</button><br>`;
+        html += `<button id="btn${i}" onclick="reveal(${i})">${players[i]}</button><br>`;
     }
-    document.getElementById("gameInfo").innerHTML += "<br><br>" + out;
+
+    document.getElementById("gameInfo").innerHTML = html;
+
+    const btn = document.getElementById("startBtn");
+    btn.textContent = "Ponovna igra";
+    btn.onclick = () => location.reload();
 }
 
-// Reveal card for a player
+/* === REVEAL === */
 function reveal(i) {
-    let btn = document.getElementById("btn"+i);
+    if (i === spyIndex) popupMsg(players[i] + " – ti si SPY!");
+    else popupMsg(players[i] + " – tvoja karta je: " + chosenCard);
 
-    if (i === spyIndex) popupMsg(players[i] + ", ti si SPY!");
-    else popupMsg(players[i] + ", tvoja karta je: " + chosenCard);
-
+    const btn = document.getElementById("btn"+i);
     btn.classList.add("disabled");
     btn.disabled = true;
 }
 
-// Reset game
-function resetGame() {
-    location.reload();
-}
-
-// Open settings (show setup again)
+/* === SETTINGS BUTTON === */
 function showSettings() {
     document.getElementById("setup").style.display = "block";
 }
+
 </script>
 
 </body>
